@@ -60,14 +60,21 @@ final class DeveloperActivityService: ObservableObject {
     }
 
     private var currentInterval: TimeInterval = 4.0
+    /// Baseline poll interval set on expand/collapse; backoff doubles from here.
+    private var baseInterval: TimeInterval = 4.0
+    private var consecutiveStable = 0
+    private var lastSnapshotFingerprint: String?
 
     func start() {
         startTimer(interval: currentInterval)
     }
 
     func setRefreshInterval(_ interval: TimeInterval) {
-        guard currentInterval != interval else { return }
+        guard baseInterval != interval else { return }
+        baseInterval = interval
         currentInterval = interval
+        consecutiveStable = 0
+        lastSnapshotFingerprint = nil
         startTimer(interval: interval)
     }
 
@@ -79,6 +86,38 @@ final class DeveloperActivityService: ObservableObject {
         }
         timer.tolerance = 0.5
         refreshTimer = timer
+    }
+
+    /// Reschedules the timer to a new interval without an immediate refresh, so
+    /// adaptive backoff never re-enters `refresh()` from inside `apply`.
+    private func rescheduleWithoutRefresh(interval: TimeInterval) {
+        refreshTimer?.invalidate()
+        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
+        timer.tolerance = max(0.5, interval * 0.1)
+        refreshTimer = timer
+    }
+
+    private func backOffIfNeeded() {
+        let newInterval = min(currentInterval * 2, baseInterval * 4)
+        guard newInterval > currentInterval else { return }
+        currentInterval = newInterval
+        rescheduleWithoutRefresh(interval: newInterval)
+    }
+
+    private static func snapshotFingerprint(_ snapshot: ActivityCollectionSnapshot) -> String {
+        let activities = snapshot.activities
+            .map { "\($0.id):\($0.state.rawValue)" }
+            .sorted()
+            .joined(separator: ",")
+        let containers = snapshot.containers
+            .filter(\.isRunning)
+            .map(\.id)
+            .sorted()
+            .joined(separator: ",")
+        let git = snapshot.gitSnapshot.map { "\($0.root.path):\($0.changedFiles)" } ?? ""
+        return "\(activities)|\(containers)|\(git)"
     }
 
     func pause() {
@@ -216,7 +255,27 @@ final class DeveloperActivityService: ObservableObject {
         containers = snapshot.containers
         gitSnapshot = snapshot.gitSnapshot
         lastRefresh = Date()
+        adaptPolling(to: snapshot)
         isRefreshing = false
+    }
+
+    /// Slows polling while the developer-activity snapshot is unchanged, and
+    /// snaps back to the baseline interval the moment anything changes.
+    private func adaptPolling(to snapshot: ActivityCollectionSnapshot) {
+        let fingerprint = Self.snapshotFingerprint(snapshot)
+        if fingerprint == lastSnapshotFingerprint {
+            consecutiveStable += 1
+            if consecutiveStable >= 3 {
+                backOffIfNeeded()
+            }
+        } else {
+            consecutiveStable = 0
+            if currentInterval != baseInterval {
+                currentInterval = baseInterval
+                rescheduleWithoutRefresh(interval: baseInterval)
+            }
+        }
+        lastSnapshotFingerprint = fingerprint
     }
 
     private func present(_ nextGlance: DeveloperActivityGlance) {
@@ -514,6 +573,21 @@ private actor LocalSiteMetadataCache {
 }
 
 private enum ProcessScanner {
+    /// `lsof -d cwd` costs ~0.25s per PID, so cache the answer. A running
+    /// process's working directory rarely changes; a 30s TTL drops this to
+    /// one lookup per server/task per half-minute instead of every poll.
+    private static let cwdCache = NSCache<NSNumber, CWDCacheEntry>()
+    private static let cwdTTL: TimeInterval = 30
+
+    private final class CWDCacheEntry {
+        let url: URL?
+        let fetchedAt: Date
+        init(url: URL?, fetchedAt: Date) {
+            self.url = url
+            self.fetchedAt = fetchedAt
+        }
+    }
+
     static func runningProcesses() -> [RunningProcess] {
         let output = ShellCommand.run("/bin/ps", ["-axo", "pid=,etime=,command="])
         return output.split(separator: "\n").compactMap { line in
@@ -524,6 +598,17 @@ private enum ProcessScanner {
     }
 
     static func workingDirectory(pid: Int32) -> URL? {
+        let key = NSNumber(value: pid)
+        if let entry = cwdCache.object(forKey: key),
+           Date().timeIntervalSince(entry.fetchedAt) < cwdTTL {
+            return entry.url
+        }
+        let url = uncachedWorkingDirectory(pid: pid)
+        cwdCache.setObject(CWDCacheEntry(url: url, fetchedAt: Date()), forKey: key)
+        return url
+    }
+
+    private static func uncachedWorkingDirectory(pid: Int32) -> URL? {
         let output = ShellCommand.run("/usr/sbin/lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"])
         guard let pathLine = output.split(separator: "\n").first(where: { $0.first == "n" }) else { return nil }
         return URL(fileURLWithPath: String(pathLine.dropFirst()), isDirectory: true)
