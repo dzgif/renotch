@@ -11,6 +11,12 @@ final class AppModel: ObservableObject {
             if mode == .compact {
                 selectedSection = compactDestination
             }
+            // Keep lyrics in sync with the master toggle (idempotent when unchanged).
+            if settings.resolvedLyricsEnabled {
+                lyrics.load(for: music.track)
+            } else {
+                lyrics.clear()
+            }
             onPanelConfigurationChanged?()
         }
     }
@@ -33,11 +39,13 @@ final class AppModel: ObservableObject {
 
     let timer: TimerService
     let music: MusicService
+    let lyrics: LyricsService
     let browser: BrowserActivityService
     let calendar: AppleCalendarService
     let shelf: ShelfStore
     let todos: TodoStore
     let activity: DeveloperActivityService
+    let system: SystemMonitorService
     let focusBlocker: FocusBlockerService
 
     var onPanelConfigurationChanged: (() -> Void)?
@@ -51,6 +59,7 @@ final class AppModel: ObservableObject {
     private var messageWorkItem: DispatchWorkItem?
     private var browserActivityCancellable: AnyCancellable?
     private var musicActivityCancellable: AnyCancellable?
+    private var musicTrackCancellable: AnyCancellable?
     private var timerActivityCancellable: AnyCancellable?
     private var activityGlanceCancellable: AnyCancellable?
     private var focusBlockerCancellable: AnyCancellable?
@@ -65,11 +74,13 @@ final class AppModel: ObservableObject {
         settings = loadedSettings
         timer = TimerService(defaults: defaults)
         music = MusicService()
+        lyrics = LyricsService()
         browser = BrowserActivityService()
         calendar = AppleCalendarService()
         shelf = ShelfStore()
         todos = TodoStore(defaults: defaults)
         activity = DeveloperActivityService()
+        system = SystemMonitorService()
         focusBlocker = FocusBlockerService()
         FocusBlockerOverlayController.shared.blockerService = focusBlocker
 
@@ -91,6 +102,16 @@ final class AppModel: ObservableObject {
         musicActivityCancellable = music.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
+        musicTrackCancellable = music.$track
+            .removeDuplicates(by: { $0?.id == $1?.id })
+            .sink { [weak self] track in
+                guard let self else { return }
+                if self.settings.resolvedLyricsEnabled {
+                    self.lyrics.load(for: track)
+                } else {
+                    self.lyrics.clear()
+                }
+            }
         timerActivityCancellable = timer.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
@@ -107,6 +128,7 @@ final class AppModel: ObservableObject {
             }
         setupPowerManagementObservers()
         activity.setRefreshInterval(isExpanded ? 4.0 : 15.0)
+        system.setRefreshInterval(isExpanded ? 2.0 : 5.0)
     }
 
     var isExpanded: Bool {
@@ -275,6 +297,7 @@ final class AppModel: ObservableObject {
         guard mode != .expanded else { return }
         mode = .expanded
         activity.setRefreshInterval(4.0)
+        system.setRefreshInterval(2.0)
         onPanelConfigurationChanged?()
     }
 
@@ -287,6 +310,7 @@ final class AppModel: ObservableObject {
         guard mode != .compact else { return }
         mode = .compact
         activity.setRefreshInterval(15.0)
+        system.setRefreshInterval(5.0)
         onPanelConfigurationChanged?()
     }
 
@@ -518,10 +542,12 @@ final class AppModel: ObservableObject {
     private func pauseServices() {
         music.pause()
         activity.pause()
+        system.pause()
     }
 
     private func resumeServices() {
         music.resume()
         activity.resume()
+        system.resume()
     }
 }

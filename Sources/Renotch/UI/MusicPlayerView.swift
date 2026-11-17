@@ -2,10 +2,30 @@ import SwiftUI
 
 struct MusicPlayerView: View {
     @ObservedObject var music: MusicService
+    @ObservedObject var lyrics: LyricsService
+    @EnvironmentObject private var model: AppModel
     @State private var draggedPosition: Double?
     @State private var draggedVolume: Double?
+    @State private var showLyrics = false
 
     var body: some View {
+        ZStack(alignment: .topTrailing) {
+            if showLyrics, music.track != nil, model.settings.resolvedLyricsEnabled {
+                LyricsView(music: music, lyrics: lyrics)
+                    .padding(.top, 2)
+            } else {
+                playerContent
+            }
+
+            if music.track != nil, model.settings.resolvedLyricsEnabled {
+                lyricsToggle
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .padding(.top, 8)
+    }
+
+    private var playerContent: some View {
         HStack(spacing: 14) {
             AlbumArtworkView(
                 artwork: music.artwork,
@@ -22,7 +42,21 @@ struct MusicPlayerView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .padding(.top, 8)
+    }
+
+    private var lyricsToggle: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.2)) { showLyrics.toggle() }
+        } label: {
+            Image(systemName: showLyrics ? "text.quote.fill" : "text.quote")
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundStyle(showLyrics ? Color.black : Color.white.opacity(0.7))
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(showLyrics ? Color.notchAccent : Color.white.opacity(0.07)))
+        }
+        .buttonStyle(.plain)
+        .help(showLyrics ? "Show player" : "Show lyrics")
+        .accessibilityLabel(showLyrics ? "Show player" : "Show lyrics")
     }
 
     private func playerDetails(_ track: MusicTrack) -> some View {

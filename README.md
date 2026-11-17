@@ -31,6 +31,11 @@ Turn your Mac's notch into a lightweight, native developer command center.
 ![Pomodoro + Website Blocker](public/Pomodoro.gif)
 
 - **Browser Bridge**: YouTube playback and Chromium download monitor.
+
+- **Synced Lyrics**: Time-synced lyrics for Apple Music & Spotify (LRCLIB), a live karaoke line in the compact notch, and a full panel with tap-to-seek.
+
+- **System Monitor**: Live CPU, memory, and battery metrics with a compact glance for the notch.
+
 - **Native & Private**: Swift/SwiftUI, fluid animations, 100% local, zero telemetry.
 
 ---

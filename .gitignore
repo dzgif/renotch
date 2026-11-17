@@ -1,6 +1,7 @@
 .build/
 .swiftpm/
 dist/
+.codegraph/
 .firecrawl/
 graphify-out/
 .DS_Store

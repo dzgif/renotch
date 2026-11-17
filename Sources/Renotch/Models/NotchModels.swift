@@ -29,6 +29,7 @@ enum CompactNotchContent: String, Codable, CaseIterable, Identifiable, Sendable 
     case calendar
     case shelf
     case todo
+    case system
 
     var id: String { rawValue }
 
@@ -40,6 +41,7 @@ enum CompactNotchContent: String, Codable, CaseIterable, Identifiable, Sendable 
         case .calendar: return "Calendar"
         case .shelf: return "File Shelf"
         case .todo: return "To-Do List"
+        case .system: return "System"
         }
     }
 
@@ -51,6 +53,7 @@ enum CompactNotchContent: String, Codable, CaseIterable, Identifiable, Sendable 
         case .calendar: return .calendar
         case .shelf: return .shelf
         case .todo: return .todo
+        case .system: return .system
         }
     }
 }
@@ -64,6 +67,7 @@ enum NotchSection: String, CaseIterable, Identifiable, Sendable {
     case calendar
     case shelf
     case todo
+    case system
 
     var id: String { rawValue }
 }
@@ -132,6 +136,8 @@ struct NotchSettings: Codable, Equatable, Sendable {
     var compactContentBottomPadding: Double? = 4
     /// Optional so settings written before the compact track-info toggle still decode.
     var compactMusicShowsTrackInfo: Bool? = false
+    /// Optional so settings written before the lyrics feature still decode.
+    var lyricsEnabled: Bool? = true
     /// Optional so settings written before adjustable expanded content padding still decode.
     var expandedContentLeadingPadding: Double? = 28
     var expandedContentTrailingPadding: Double? = 28
@@ -200,6 +206,10 @@ struct NotchSettings: Codable, Equatable, Sendable {
         compactMusicShowsTrackInfo ?? false
     }
 
+    var resolvedLyricsEnabled: Bool {
+        lyricsEnabled ?? true
+    }
+
     var resolvedAvoidHardwareNotch: Bool {
         avoidHardwareNotch ?? false
     }
@@ -266,6 +276,7 @@ struct NotchSettings: Codable, Equatable, Sendable {
         compactContentTopPadding = resolvedCompactContentTopPadding
         compactContentBottomPadding = resolvedCompactContentBottomPadding
         compactMusicShowsTrackInfo = resolvedCompactMusicShowsTrackInfo
+        lyricsEnabled = resolvedLyricsEnabled
         expandedContentLeadingPadding = resolvedExpandedContentLeadingPadding
         expandedContentTrailingPadding = resolvedExpandedContentTrailingPadding
         expandedContentTopPadding = (expandedContentTopPadding ?? 12).clamped(to: Self.expandedContentPaddingRange)

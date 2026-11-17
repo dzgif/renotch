@@ -63,7 +63,7 @@ struct ExpandedNotchView: View {
                let media = model.browser.media {
                 ExpandedBrowserMediaView(media: media, artwork: model.browser.mediaArtwork)
             } else {
-                MusicPlayerView(music: model.music)
+                MusicPlayerView(music: model.music, lyrics: model.lyrics)
             }
         case .timer:
             TimerView(timer: timer)
@@ -73,6 +73,8 @@ struct ExpandedNotchView: View {
             FileShelfView(shelf: model.shelf)
         case .todo:
             TodoView(store: model.todos)
+        case .system:
+            SystemMonitorView(service: model.system)
         case .welcome:
             WelcomeView()
         }
@@ -118,6 +120,11 @@ struct ExpandedNotchView: View {
                         icon: "calendar",
                         isSelected: isSelected(.calendar)
                     ) { select(.calendar) }
+                    SectionButton(
+                        title: "System",
+                        icon: "gauge.medium",
+                        isSelected: isSelected(.system)
+                    ) { select(.system) }
                 }
             }
 
@@ -192,6 +199,11 @@ struct ExpandedNotchView: View {
                 icon: "calendar",
                 isSelected: isSelected(.calendar)
             ) { select(.calendar) }
+            SectionButton(
+                title: "System",
+                icon: "gauge.medium",
+                isSelected: isSelected(.system)
+            ) { select(.system) }
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 3)

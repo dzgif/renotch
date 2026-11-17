@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CompactMusicView: View {
     @ObservedObject var music: MusicService
+    @ObservedObject var lyrics: LyricsService
     @ObservedObject var timer: TimerService
     let message: String?
     var showsTrackInfo = false
@@ -13,10 +14,12 @@ struct CompactMusicView: View {
 
             if showsTrackInfo {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(message ?? music.track?.title ?? "Music")
-                        .font(.system(size: 11, weight: .semibold))
+                    Text(displayTitle)
+                        .font(.system(size: 11, weight: isShowingLyric ? .regular : .semibold))
+                        .italic(isShowingLyric)
                         .foregroundStyle(message == nil ? .white : Color.notchAccent)
                         .lineLimit(1)
+                        .animation(.easeOut(duration: 0.3), value: displayTitle)
 
                     Text(subtitle)
                         .font(.system(size: 8.5, weight: .medium))
@@ -74,6 +77,19 @@ struct CompactMusicView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .animation(.easeOut(duration: 0.18), value: showsTrackInfo)
+    }
+
+    private var currentLyric: String? {
+        guard music.isPlaying else { return nil }
+        return lyrics.currentLine(at: music.position)
+    }
+
+    private var isShowingLyric: Bool {
+        message == nil && currentLyric != nil
+    }
+
+    private var displayTitle: String {
+        message ?? currentLyric ?? music.track?.title ?? "Music"
     }
 
     private var subtitle: String {

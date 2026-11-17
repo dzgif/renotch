@@ -417,6 +417,17 @@ struct SettingsView: View {
 
                     Divider().opacity(0.12).padding(.vertical, 12)
 
+                    SettingRow(
+                        title: "Show lyrics",
+                        subtitle: "Display time-synced lyrics in the music view and a live karaoke line in compact."
+                    ) {
+                        Toggle("", isOn: lyricsEnabledBinding)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+
+                    Divider().opacity(0.12).padding(.vertical, 12)
+
                     AppleValueSlider(
                         title: "Width",
                         subtitle: "Compact width of the notch",
@@ -1014,6 +1025,13 @@ struct SettingsView: View {
         Binding(
             get: { model.settings.resolvedCompactMusicShowsTrackInfo },
             set: { model.settings.compactMusicShowsTrackInfo = $0 }
+        )
+    }
+
+    private var lyricsEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { model.settings.resolvedLyricsEnabled },
+            set: { model.settings.lyricsEnabled = $0 }
         )
     }
 

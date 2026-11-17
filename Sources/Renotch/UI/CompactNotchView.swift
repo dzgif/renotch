@@ -29,6 +29,7 @@ struct CompactNotchView: View {
             case .music:
                 CompactMusicView(
                     music: music,
+                    lyrics: model.lyrics,
                     timer: timer,
                     message: model.transientMessage,
                     showsTrackInfo: model.settings.resolvedCompactMusicShowsTrackInfo
@@ -67,6 +68,7 @@ struct CompactNotchView: View {
         case .music:
             CompactMusicView(
                 music: music,
+                lyrics: model.lyrics,
                 timer: timer,
                 message: model.transientMessage,
                 showsTrackInfo: model.settings.resolvedCompactMusicShowsTrackInfo
@@ -81,6 +83,8 @@ struct CompactNotchView: View {
             CompactShelfView(shelf: shelf)
         case .todo:
             CompactTodoView(store: todos, message: model.transientMessage)
+        case .system:
+            CompactSystemView(service: model.system)
         }
     }
 

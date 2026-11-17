@@ -497,6 +497,37 @@ struct SmokeTests {
         expect(settingsWithoutAppearance.resolvedCompactContentBottomPadding == 4, "legacy compact content bottom padding default")
         expect(settingsWithoutAppearance.resolvedExpandedContentTopPadding == 12, "legacy expanded content top padding default")
 
+        let parsedLRC = LyricsService.parseLRC("[00:12.34]Hello world")
+        expect(parsedLRC.count == 1, "LRC single line parse count")
+        expect(abs((parsedLRC.first?.time ?? -1) - 12.34) < 0.001, "LRC timestamp parse")
+        expect(parsedLRC.first?.text == "Hello world", "LRC line text parse")
+
+        let multiTimestampLRC = LyricsService.parseLRC("[00:10.00][00:20.00]Chorus")
+        expect(multiTimestampLRC.count == 2, "LRC multi-timestamp expansion")
+        expect(multiTimestampLRC.map(\.time) == [10.0, 20.0], "LRC multi-timestamp times")
+
+        let offsetLRC = LyricsService.parseLRC("[offset:+500]\n[00:10.00]Verse")
+        expect(abs((offsetLRC.first?.time ?? -1) - 10.5) < 0.001, "LRC offset tag applied")
+
+        let colonFractionLRC = LyricsService.parseLRC("[00:10:50]Word")
+        expect(abs((colonFractionLRC.first?.time ?? -1) - 10.5) < 0.001, "LRC colon fraction parse")
+
+        let metadataSkippedLRC = LyricsService.parseLRC("[ar:Artist]\n[ti:Title]\n[00:05.00]Line")
+        expect(metadataSkippedLRC.count == 1, "LRC metadata tags skipped")
+
+        let unsortedLRC = LyricsService.parseLRC("[00:30.00]B\n[00:10.00]A")
+        expect(unsortedLRC.map(\.time) == [10.0, 30.0], "LRC lines sorted by time")
+
+        let negativeOffsetLRC = LyricsService.parseLRC("[offset:-500]\n[00:00.00]Start")
+        expect(negativeOffsetLRC.first?.time == 0, "LRC negative time clamped to zero")
+
+        let lyricLines = [LyricLine(time: 5, text: "a"), LyricLine(time: 10, text: "b"), LyricLine(time: 15, text: "c")]
+        expect(LyricsService.index(of: [], at: 3) == nil, "lyric index empty")
+        expect(LyricsService.index(of: lyricLines, at: 0) == nil, "lyric index before first line")
+        expect(LyricsService.index(of: lyricLines, at: 5) == 0, "lyric index exact first line")
+        expect(LyricsService.index(of: lyricLines, at: 12) == 1, "lyric index between lines")
+        expect(LyricsService.index(of: lyricLines, at: 100) == 2, "lyric index after last line")
+
         let legacySuite = "VirtualNotchLegacyLayoutTests.\(UUID().uuidString)"
         guard let legacyDefaults = UserDefaults(suiteName: legacySuite) else {
             throw SmokeTestError("could not create legacy defaults")
