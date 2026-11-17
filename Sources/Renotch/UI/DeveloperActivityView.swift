@@ -195,70 +195,120 @@ struct DeveloperActivityView: View {
     }
 
     private func serversGrid(_ servers: [DeveloperActivity]) -> some View {
-        HStack(spacing: 8) {
-            ForEach(servers.prefix(3)) { server in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(server.kind.tint.opacity(0.12))
-                            ServerFaviconImage(
-                                faviconData: server.faviconData,
-                                fallbackTint: server.kind.tint,
-                                size: 18
-                            )
-                        }
-                        .frame(width: 26, height: 26)
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            HStack(spacing: 5) {
-                                Text(server.title)
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                                    .lineLimit(1)
-                                ActivityStateDot(state: server.state)
-                            }
-                            Text(server.subtitle)
-                                .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                                .foregroundStyle(server.kind.tint)
-                                .lineLimit(1)
-                        }
-
-                        Spacer(minLength: 0)
-                    }
-
-                    if let detail = server.detail, !detail.isEmpty {
-                        Text(detail)
-                            .font(.system(size: 8.5))
-                            .foregroundStyle(Color.notchMuted)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    HStack(spacing: 5) {
-                        if server.url != nil {
-                            ActivityIconButton(title: "Open", icon: "arrow.up.right") { service.open(server) }
-                            ActivityIconButton(title: "Copy URL", icon: "doc.on.doc") {
-                                service.copyPrimaryValue(server)
-                                model.showMessage("URL copied")
-                            }
-                        }
-                        if server.workingDirectory != nil {
-                            ActivityIconButton(title: "Open folder", icon: "folder") { service.revealFolder(server) }
-                            ActivityIconButton(title: "Open terminal", icon: "terminal") { service.openLogs(for: server) }
-                        }
-                        if server.processID != nil {
-                            ActivityIconButton(title: "Stop", icon: "stop.fill", tint: .red) { service.stop(server) }
-                        }
-                    }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                ForEach(servers.prefix(3)) { server in
+                    serverCard(server)
                 }
-                .padding(10)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.white.opacity(0.045))
-                )
+            }
+            VStack(spacing: 6) {
+                ForEach(servers.prefix(3)) { server in
+                    serverRow(server)
+                }
+            }
+        }
+    }
+
+    private func serverCard(_ server: DeveloperActivity) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                serverIcon(server)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 5) {
+                        Text(server.title)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        ActivityStateDot(state: server.state)
+                    }
+                    Text(server.subtitle)
+                        .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                        .foregroundStyle(server.kind.tint)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            if let detail = server.detail, !detail.isEmpty {
+                Text(detail)
+                    .font(.system(size: 8.5))
+                    .foregroundStyle(Color.notchMuted)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+
+            Spacer(minLength: 0)
+
+            serverActions(server)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.045))
+        )
+    }
+
+    private func serverRow(_ server: DeveloperActivity) -> some View {
+        HStack(spacing: 10) {
+            serverIcon(server)
+
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 5) {
+                    Text(server.title)
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    ActivityStateDot(state: server.state)
+                }
+                Text(server.subtitle)
+                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(server.kind.tint)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            serverActions(server)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.045))
+        )
+    }
+
+    private func serverIcon(_ server: DeveloperActivity) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(server.kind.tint.opacity(0.12))
+            ServerFaviconImage(
+                faviconData: server.faviconData,
+                fallbackTint: server.kind.tint,
+                size: 18
+            )
+        }
+        .frame(width: 26, height: 26)
+    }
+
+    private func serverActions(_ server: DeveloperActivity) -> some View {
+        HStack(spacing: 5) {
+            if server.url != nil {
+                ActivityIconButton(title: "Open", icon: "arrow.up.right") { service.open(server) }
+                ActivityIconButton(title: "Copy URL", icon: "doc.on.doc") {
+                    service.copyPrimaryValue(server)
+                    model.showMessage("URL copied")
+                }
+            }
+            if server.workingDirectory != nil {
+                ActivityIconButton(title: "Open folder", icon: "folder") { service.revealFolder(server) }
+                ActivityIconButton(title: "Open terminal", icon: "terminal") { service.openLogs(for: server) }
+            }
+            if server.processID != nil {
+                ActivityIconButton(title: "Stop", icon: "stop.fill", tint: .red) { service.stop(server) }
             }
         }
     }
