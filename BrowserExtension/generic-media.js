@@ -34,7 +34,7 @@
     };
   }
 
-  function emit() {
+  function emit(force = false) {
     const s = mediaState();
     if (!s.isPlaying && !s.title) {
       if (lastFingerprint !== "none") {
@@ -45,7 +45,7 @@
     }
 
     const fingerprint = `${s.isPlaying}|${s.title}|${s.artist}`;
-    if (fingerprint === lastFingerprint) return;
+    if (fingerprint === lastFingerprint && !force) return;
     lastFingerprint = fingerprint;
 
     chrome.runtime.sendMessage({
@@ -69,6 +69,7 @@
     chrome.runtime.sendMessage({ kind: "media", action: "clear", sessionID });
   });
 
-  setInterval(emit, 2000);
+  // Heartbeat every 2s so the app never expires the media session.
+  setInterval(() => emit(true), 2000);
   emit();
 })();
