@@ -167,7 +167,7 @@ struct TodoView: View {
     // MARK: - Actions
 
     private func addTodo() {
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.85)) {
+        withAnimation(DynamicNotchSprings.snappy) {
             guard store.add(draft) else { return }
             draft = ""
             isInputFocused = true
@@ -250,7 +250,7 @@ private struct TodoRow: View {
     }
 
     private func toggleItem() {
-        withAnimation(.spring(response: 0.26, dampingFraction: 0.72)) {
+        withAnimation(DynamicNotchSprings.rubberBounce) {
             store.toggle(item)
             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
         }

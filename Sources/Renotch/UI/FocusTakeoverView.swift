@@ -213,6 +213,6 @@ struct TactileAppleButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.965 : 1.0)
             .opacity(configuration.isPressed ? 0.88 : 1.0)
-            .animation(.spring(response: 0.2, dampingFraction: 0.82), value: configuration.isPressed)
+            .animation(DynamicNotchSprings.rubberBounce, value: configuration.isPressed)
     }
 }

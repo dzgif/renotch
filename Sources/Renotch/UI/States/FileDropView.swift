@@ -10,7 +10,7 @@ struct FileDropView: View {
                 .font(.system(size: 26, weight: .semibold))
                 .scaleEffect(reduceMotion ? 1 : (isTargeted ? 1.08 : 1))
                 .animation(
-                    reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.72),
+                    reduceMotion ? nil : DynamicNotchSprings.rubberBounce,
                     value: isTargeted
                 )
 

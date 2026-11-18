@@ -40,7 +40,7 @@ struct CompactNotchView: View {
         }
         .id(presentationID)
         .transition(.identity)
-        .animation(.spring(response: 0.32, dampingFraction: 0.92), value: presentationID)
+        .animation(DynamicNotchSprings.snappy, value: presentationID)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.leading, compactContentLeadingInset)
         .padding(.trailing, compactContentTrailingInset)

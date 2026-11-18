@@ -56,7 +56,7 @@ struct CompactFaceIDView: View {
                  isPulsing = true
              }
              DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                 withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                 withAnimation(DynamicNotchSprings.rubberBounce) {
                      showCheck = true
                  }
              }

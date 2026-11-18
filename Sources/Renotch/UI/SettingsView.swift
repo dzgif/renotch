@@ -116,7 +116,7 @@ struct SettingsView: View {
                         tab: tab,
                         isSelected: selectedTab == tab
                     ) {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        withAnimation(DynamicNotchSprings.snappy) {
                             selectedTab = tab
                         }
                     }
@@ -129,7 +129,7 @@ struct SettingsView: View {
             // Footer info / Restore Defaults button
             VStack(alignment: .leading, spacing: 8) {
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    withAnimation(DynamicNotchSprings.snappy) {
                         model.resetSettings()
                     }
                 } label: {
@@ -401,7 +401,7 @@ struct SettingsView: View {
                         .lineSpacing(2)
                 }
             }
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: model.settings.resolvedAppearance)
+            .animation(DynamicNotchSprings.snappy, value: model.settings.resolvedAppearance)
 
             // Compact Notch Section Card
             SettingCard(title: "Compact Notch Dimensions", icon: "rectangle.compress.vertical", iconColor: .cyan) {
@@ -568,7 +568,7 @@ struct SettingsView: View {
                         subtitle: "Match expanded width directly to compact width"
                     ) {
                         Button {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            withAnimation(DynamicNotchSprings.snappy) {
                                 model.settings.expandedWidth = model.settings.compactWidth
                             }
                         } label: {

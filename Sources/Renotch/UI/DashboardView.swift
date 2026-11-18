@@ -490,7 +490,7 @@ private struct DashboardBentoCard<Content: View>: View {
                 )
                 .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .scaleEffect(isHovering ? 1.012 : 1.0)
-                .animation(.spring(response: 0.3, dampingFraction: 0.82), value: isHovering)
+                .animation(DynamicNotchSprings.fluidHover, value: isHovering)
                 .animation(.easeOut(duration: 0.18), value: isActive)
         }
         .buttonStyle(AppleSpringPressStyle())
@@ -507,6 +507,6 @@ private struct AppleSpringPressStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .opacity(configuration.isPressed ? 0.88 : 1.0)
-            .animation(.spring(response: 0.24, dampingFraction: 0.78), value: configuration.isPressed)
+            .animation(DynamicNotchSprings.rubberBounce, value: configuration.isPressed)
     }
 }

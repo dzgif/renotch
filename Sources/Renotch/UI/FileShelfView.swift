@@ -27,7 +27,7 @@ struct FileShelfView: View {
         }
         .padding(.top, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: shelf.items)
+        .animation(DynamicNotchSprings.snappy, value: shelf.items)
     }
 
     private var header: some View {

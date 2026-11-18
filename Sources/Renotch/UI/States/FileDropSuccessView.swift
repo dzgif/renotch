@@ -19,7 +19,7 @@ struct FileDropSuccessView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.82).delay(0.08)) {
+            withAnimation(DynamicNotchSprings.fluidHover.delay(0.08)) {
                 didSettle = true
             }
         }
