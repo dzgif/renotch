@@ -32,26 +32,33 @@ final class MediaRemoteService: ObservableObject {
     private typealias GetIsPlaying = @convention(c) (
         DispatchQueue, @escaping @convention(block) (Bool) -> Void
     ) -> Void
-    private typealias GetDisplayName = @convention(c) (
-        DispatchQueue, @escaping @convention(block) (CFString?) -> Void
+    private typealias GetClient = @convention(c) (
+        DispatchQueue, @escaping @convention(block) (UnsafeMutableRawPointer?) -> Void
     ) -> Void
+    private typealias ClientString = @convention(c) (UnsafeMutableRawPointer) -> CFString?
 
     private let getInfo: GetNowPlayingInfo?
     private let getIsPlaying: GetIsPlaying?
-    private let getDisplayName: GetDisplayName?
+    private let getClient: GetClient?
+    private let clientBundleID: ClientString?
+    private let clientDisplayName: ClientString?
 
-    private static let excludedAppNames: Set<String> = ["Music", "Spotify"]
+    private static let excludedBundleIDs: Set<String> = ["com.apple.Music", "com.spotify.client"]
 
     init() {
         let handle = dlopen("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote", RTLD_NOW)
         if let handle {
             getInfo = Self.load(handle, "MRMediaRemoteGetNowPlayingInfo")
             getIsPlaying = Self.load(handle, "MRMediaRemoteGetNowPlayingApplicationIsPlaying")
-            getDisplayName = Self.load(handle, "MRMediaRemoteGetNowPlayingApplicationDisplayName")
+            getClient = Self.load(handle, "MRMediaRemoteGetNowPlayingClient")
+            clientBundleID = Self.load(handle, "MRNowPlayingClientGetBundleIdentifier")
+            clientDisplayName = Self.load(handle, "MRNowPlayingClientGetDisplayName")
         } else {
             getInfo = nil
             getIsPlaying = nil
-            getDisplayName = nil
+            getClient = nil
+            clientBundleID = nil
+            clientDisplayName = nil
         }
         startPolling()
     }
@@ -86,19 +93,26 @@ final class MediaRemoteService: ObservableObject {
     }
 
     private func refresh() {
-        guard let getInfo, let getIsPlaying, let getDisplayName else {
+        guard let getInfo, let getIsPlaying, let getClient else {
             nowPlaying = nil
             return
         }
+        let bundleIDFn = clientBundleID
+        let displayNameFn = clientDisplayName
 
         getIsPlaying(.main) { [weak self] isPlaying in
             guard isPlaying else {
                 Task { @MainActor in self?.nowPlaying = nil }
                 return
             }
-            getDisplayName(.main) { [weak self] displayName in
-                let appName = displayName as String? ?? ""
-                guard !Self.excludedAppNames.contains(appName) else {
+            getClient(.main) { [weak self] client in
+                var bundleID = ""
+                var appName = ""
+                if let client {
+                    bundleID = (bundleIDFn?(client) as String?) ?? ""
+                    appName = (displayNameFn?(client) as String?) ?? ""
+                }
+                guard !Self.excludedBundleIDs.contains(bundleID) else {
                     Task { @MainActor in self?.nowPlaying = nil }
                     return
                 }

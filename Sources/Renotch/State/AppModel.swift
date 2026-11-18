@@ -157,7 +157,7 @@ final class AppModel: ObservableObject {
             browserActivation: browser.playbackActivationDate,
             musicIsPlaying: music.isPlaying,
             musicActivation: music.playbackActivationDate,
-            remoteIsPlaying: mediaRemote.nowPlaying != nil,
+            remoteIsPlaying: mediaRemote.nowPlaying != nil && !music.isPlaying,
             remoteActivation: mediaRemote.playbackActivationDate
         )
     }
