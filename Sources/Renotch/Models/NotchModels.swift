@@ -365,22 +365,60 @@ struct GitActivitySnapshot: Equatable, Sendable {
     let remoteURL: URL?
 }
 
+enum TodoReminder: String, Codable, CaseIterable, Identifiable, Sendable {
+    case atDue
+    case fifteenMinutes
+    case oneHour
+    case oneDay
+
+    var id: String { rawValue }
+
+    /// Seconds before the due date the reminder should fire.
+    var offset: TimeInterval {
+        switch self {
+        case .atDue: return 0
+        case .fifteenMinutes: return 15 * 60
+        case .oneHour: return 60 * 60
+        case .oneDay: return 24 * 60 * 60
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .atDue: return "At deadline"
+        case .fifteenMinutes: return "15 min before"
+        case .oneHour: return "1 hour before"
+        case .oneDay: return "1 day before"
+        }
+    }
+}
+
 struct TodoItem: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     let title: String
     let createdAt: Date
     var isCompleted: Bool
+    var dueDate: Date?
+    var reminder: TodoReminder?
 
     init(
         id: UUID = UUID(),
         title: String,
         createdAt: Date = Date(),
-        isCompleted: Bool = false
+        isCompleted: Bool = false,
+        dueDate: Date? = nil,
+        reminder: TodoReminder? = nil
     ) {
         self.id = id
         self.title = title
         self.createdAt = createdAt
         self.isCompleted = isCompleted
+        self.dueDate = dueDate
+        self.reminder = reminder
+    }
+
+    var notificationIdentifier: String {
+        "virtual-notch-todo-\(id.uuidString)"
     }
 }
 

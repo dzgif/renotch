@@ -77,6 +77,25 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         center?.removePendingNotificationRequests(withIdentifiers: [id])
     }
 
+    /// Schedule a calendar-based reminder for a to-do. The `date` is the
+    /// absolute fire time (already offset from the due date); it survives an
+    /// app quit and uses the same identifier the caller passes in for cancels.
+    func scheduleTodoReminder(title: String, at date: Date, identifier: String) {
+        guard let center else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "To-Do Reminder"
+        content.body = title
+        content.sound = .default
+
+        let components = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: date
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        center.add(request)
+    }
+
     func timerFinished(mode: PomodoroMode = .focus, breakMinutes: Int = 5, autoAdvance: Bool = true) {
         playTimerSound()
 

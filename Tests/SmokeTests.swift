@@ -528,6 +528,24 @@ struct SmokeTests {
         expect(LyricsService.index(of: lyricLines, at: 12) == 1, "lyric index between lines")
         expect(LyricsService.index(of: lyricLines, at: 100) == 2, "lyric index after last line")
 
+        let legacyTodoJSON: [String: Any] = [
+            "id": UUID().uuidString,
+            "title": "Legacy task",
+            "createdAt": Date().timeIntervalSinceReferenceDate,
+            "isCompleted": false
+        ]
+        let legacyTodo = try JSONDecoder().decode(TodoItem.self, from: JSONSerialization.data(withJSONObject: legacyTodoJSON))
+        expect(legacyTodo.dueDate == nil, "legacy todo decodes with nil due date")
+        expect(legacyTodo.reminder == nil, "legacy todo decodes with nil reminder")
+
+        let todoDefaults = UserDefaults(suiteName: "renotch.tests.todo.\(UUID().uuidString)")!
+        let todoStore = TodoStore(defaults: todoDefaults)
+        todoStore.add("No due date")
+        todoStore.add("Due tomorrow", dueDate: Date().addingTimeInterval(86_400), reminder: .oneHour)
+        todoStore.add("Due soon", dueDate: Date().addingTimeInterval(3_600))
+        expect(todoStore.soonestPendingTask?.title == "Due soon", "soonest-due task sorts first")
+        expect(todoStore.items.count == 3, "todo add keeps all items")
+
         let legacySuite = "VirtualNotchLegacyLayoutTests.\(UUID().uuidString)"
         guard let legacyDefaults = UserDefaults(suiteName: legacySuite) else {
             throw SmokeTestError("could not create legacy defaults")

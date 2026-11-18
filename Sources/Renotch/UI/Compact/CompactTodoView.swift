@@ -8,7 +8,7 @@ struct CompactTodoView: View {
     let message: String?
 
     private var topPendingTask: TodoItem? {
-        store.items.first(where: { !$0.isCompleted })
+        store.soonestPendingTask
     }
 
     private var completedCount: Int {
@@ -95,6 +95,10 @@ struct CompactTodoView: View {
         if store.items.isEmpty {
             return "Tap to add your first task"
         }
+        if let top = topPendingTask, let due = top.dueDate {
+            let summary = dueSummary(due)
+            return store.remainingCount > 1 ? "\(summary) · \(store.remainingCount) left" : summary
+        }
         if store.remainingCount == 0 {
             return "\(store.items.count) done today · All clear"
         }
@@ -102,6 +106,19 @@ struct CompactTodoView: View {
             return "\(store.remainingCount) left · \(completedCount) done"
         }
         return "\(store.remainingCount) \(store.remainingCount == 1 ? "task" : "tasks") to do"
+    }
+
+    private func dueSummary(_ date: Date) -> String {
+        if date < Date() {
+            return "Overdue · \(date.formatted(.dateTime.hour().minute()))"
+        }
+        if Calendar.current.isDateInToday(date) {
+            return "Today \(date.formatted(.dateTime.hour().minute()))"
+        }
+        if Calendar.current.isDateInTomorrow(date) {
+            return "Tomorrow \(date.formatted(.dateTime.hour().minute()))"
+        }
+        return date.formatted(.dateTime.weekday(.abbreviated).hour().minute())
     }
 
     @ViewBuilder

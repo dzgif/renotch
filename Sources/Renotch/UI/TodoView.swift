@@ -5,6 +5,9 @@ struct TodoView: View {
     @ObservedObject var store: TodoStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var draft = ""
+    @State private var hasDueDate = false
+    @State private var dueDate = Date()
+    @State private var reminder: TodoReminder?
     @FocusState private var isInputFocused: Bool
 
     var body: some View {
@@ -47,49 +50,94 @@ struct TodoView: View {
     // MARK: - Composer
 
     private var composer: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "plus.circle.fill")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(isInputFocused ? Color.blue : Color.white.opacity(0.4))
-                .animation(.easeOut(duration: 0.16), value: isInputFocused)
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(isInputFocused ? Color.blue : Color.white.opacity(0.4))
+                    .animation(.easeOut(duration: 0.16), value: isInputFocused)
 
-            TextField("Add a new task or to-do…", text: $draft)
-                .textFieldStyle(.plain)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.white)
-                .focused($isInputFocused)
-                .onSubmit(addTodo)
-
-            if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Button(action: addTodo) {
-                    HStack(spacing: 3) {
-                        Text("Add")
-                            .font(.system(size: 11, weight: .semibold))
-                        Image(systemName: "return")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .padding(.horizontal, 9)
-                    .frame(height: 22)
-                    .background(Color.blue)
+                TextField("Add a new task or to-do…", text: $draft)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.white)
-                    .clipShape(Capsule())
+                    .focused($isInputFocused)
+                    .onSubmit(addTodo)
+
+                Button {
+                    hasDueDate.toggle()
+                    if hasDueDate {
+                        dueDate = Date().addingTimeInterval(3_600)
+                        reminder = nil
+                    }
+                } label: {
+                    Image(systemName: hasDueDate ? "clock.fill" : "clock")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(hasDueDate ? Color.blue : Color.white.opacity(0.5))
+                        .frame(width: 22, height: 22)
+                        .background(Circle().fill(hasDueDate ? Color.blue.opacity(0.18) : Color.white.opacity(0.06)))
                 }
                 .buttonStyle(.plain)
-                .transition(.opacity.combined(with: .scale(scale: 0.85)))
+                .help("Add due date and reminder")
+
+                if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Button(action: addTodo) {
+                        HStack(spacing: 3) {
+                            Text("Add")
+                                .font(.system(size: 11, weight: .semibold))
+                            Image(systemName: "return")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .padding(.horizontal, 9)
+                        .frame(height: 22)
+                        .background(Color.blue)
+                        .foregroundStyle(.white)
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.opacity.combined(with: .scale(scale: 0.85)))
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.white.opacity(isInputFocused ? 0.08 : 0.045))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(isInputFocused ? Color.blue.opacity(0.4) : Color.white.opacity(0.08), lineWidth: 0.8)
+                    )
+            )
+            .animation(.easeOut(duration: 0.16), value: isInputFocused)
+            .animation(.easeOut(duration: 0.16), value: draft.isEmpty)
+
+            if hasDueDate {
+                HStack(spacing: 8) {
+                    DatePicker(
+                        "Due",
+                        selection: $dueDate,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.compact)
+                    .labelsHidden()
+
+                    Spacer(minLength: 0)
+
+                    Picker("Reminder", selection: $reminder) {
+                        Text("No reminder").tag(nil as TodoReminder?)
+                        ForEach(TodoReminder.allCases) { option in
+                            Text(option.title).tag(option as TodoReminder?)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                .padding(.horizontal, 10)
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 10)
-        .frame(height: 32)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(isInputFocused ? 0.08 : 0.045))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(isInputFocused ? Color.blue.opacity(0.4) : Color.white.opacity(0.08), lineWidth: 0.8)
-                )
-        )
-        .animation(.easeOut(duration: 0.16), value: isInputFocused)
-        .animation(.easeOut(duration: 0.16), value: draft.isEmpty)
+        .animation(DynamicNotchSprings.snappy, value: hasDueDate)
     }
 
     // MARK: - Status Bar
@@ -168,8 +216,12 @@ struct TodoView: View {
 
     private func addTodo() {
         withAnimation(DynamicNotchSprings.snappy) {
-            guard store.add(draft) else { return }
+            let due = hasDueDate ? dueDate : nil
+            let rem = hasDueDate ? reminder : nil
+            guard store.add(draft, dueDate: due, reminder: rem) else { return }
             draft = ""
+            hasDueDate = false
+            reminder = nil
             isInputFocused = true
             NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
         }
@@ -206,15 +258,27 @@ private struct TodoRow: View {
             }
             .buttonStyle(.plain)
 
-            // Todo Title
-            Text(item.title)
-                .font(.system(size: 11.5, weight: .medium))
-                .foregroundStyle(item.isCompleted ? Color.white.opacity(0.38) : Color.white)
-                .strikethrough(item.isCompleted, color: Color.white.opacity(0.3))
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .animation(.easeOut(duration: 0.16), value: item.isCompleted)
+            // Todo Title + due date
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(item.isCompleted ? Color.white.opacity(0.38) : Color.white)
+                    .strikethrough(item.isCompleted, color: Color.white.opacity(0.3))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                if let due = item.dueDate {
+                    HStack(spacing: 3) {
+                        Image(systemName: item.reminder != nil ? "bell" : "clock")
+                            .font(.system(size: 7, weight: .semibold))
+                        Text(dueLabel(due))
+                            .font(.system(size: 8.5, weight: .medium))
+                    }
+                    .foregroundStyle(dueDateTint(due))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(.easeOut(duration: 0.16), value: item.isCompleted)
 
             // Hover Delete Button
             if isHovering {
@@ -247,6 +311,23 @@ private struct TodoRow: View {
         .onHover { isHovering = $0 }
         .animation(.easeOut(duration: 0.14), value: isHovering)
         .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+    }
+
+    private func dueLabel(_ date: Date) -> String {
+        if Calendar.current.isDateInToday(date) {
+            return "Today \(date.formatted(.dateTime.hour().minute()))"
+        }
+        if Calendar.current.isDateInTomorrow(date) {
+            return "Tomorrow \(date.formatted(.dateTime.hour().minute()))"
+        }
+        return date.formatted(.dateTime.weekday(.abbreviated).hour().minute())
+    }
+
+    private func dueDateTint(_ date: Date) -> Color {
+        if !item.isCompleted && date < Date() {
+            return Color(red: 0.96, green: 0.38, blue: 0.38)
+        }
+        return Color.notchMuted
     }
 
     private func toggleItem() {
