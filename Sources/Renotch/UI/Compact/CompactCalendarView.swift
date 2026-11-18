@@ -27,17 +27,40 @@ struct CompactCalendarView: View {
             Spacer(minLength: 4)
 
             if let nextEvent {
-                Text(nextEvent.shortTime)
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .foregroundStyle(Color.notchAccent)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .accessibilityHidden(true)
+                TimelineView(.periodic(from: .now, by: 60)) { _ in
+                    Text(relativeCountdown(to: nextEvent.startDate) ?? nextEvent.shortTime)
+                        .font(.system(size: 9, weight: .semibold, design: .rounded))
+                        .foregroundStyle(isImminent(nextEvent.startDate) ? Color(red: 0.96, green: 0.38, blue: 0.38) : Color.notchAccent)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .contentTransition(.numericText())
+                }
+                .accessibilityHidden(true)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
+    }
+
+    /// Relative countdown to the event, or nil when it is a day or more out
+    /// (in which case the plain clock time reads better).
+    private func relativeCountdown(to date: Date) -> String? {
+        let interval = date.timeIntervalSinceNow
+        guard interval < 86_400 else { return nil }
+        if interval <= 60 { return "now" }
+        if interval < 3_600 {
+            return "in \(max(1, Int(interval / 60)))m"
+        }
+        let hours = Int(interval / 3_600)
+        let minutes = Int(interval.truncatingRemainder(dividingBy: 3_600) / 60)
+        return minutes == 0 ? "in \(hours)h" : "in \(hours)h \(minutes)m"
+    }
+
+    /// True when the event starts within 15 minutes — used for the urgency tint.
+    private func isImminent(_ date: Date) -> Bool {
+        let interval = date.timeIntervalSinceNow
+        return interval > 0 && interval < 15 * 60
     }
 
     /// Mini calendar tile showing the next event's date (or today when there
