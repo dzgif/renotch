@@ -10,6 +10,7 @@ struct CompactSystemView: View {
         HStack(spacing: 6) {
             chip(icon: "cpu", value: cpuText, tint: cpuTint)
             chip(icon: "memorychip", value: ramText, tint: ramTint)
+            chip(icon: "internaldrive", value: diskText, tint: diskTint)
             if service.metrics.hasBattery {
                 chip(icon: batteryIcon, value: batteryText, tint: batteryTint)
             }
@@ -17,7 +18,7 @@ struct CompactSystemView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("CPU \(cpuText), memory \(ramText)" + (service.metrics.hasBattery ? ", battery \(batteryText)" : ""))
+        .accessibilityLabel("CPU \(cpuText), memory \(ramText), disk \(diskText)" + (service.metrics.hasBattery ? ", battery \(batteryText)" : ""))
     }
 
     private func chip(icon: String, value: String, tint: Color) -> some View {
@@ -61,6 +62,20 @@ struct CompactSystemView: View {
         switch pressure {
         case ..<0.6: return Color.notchAccent
         case ..<0.85: return Color(red: 0.98, green: 0.72, blue: 0.38)
+        default: return Color(red: 0.96, green: 0.38, blue: 0.38)
+        }
+    }
+
+    private var diskText: String {
+        guard let pressure = service.metrics.diskPressure else { return "—" }
+        return SystemMetricFormatting.percent(pressure)
+    }
+
+    private var diskTint: Color {
+        guard let pressure = service.metrics.diskPressure else { return .notchMuted }
+        switch pressure {
+        case ..<0.8: return Color.notchAccent
+        case ..<0.9: return Color(red: 0.98, green: 0.72, blue: 0.38)
         default: return Color(red: 0.96, green: 0.38, blue: 0.38)
         }
     }

@@ -26,6 +26,17 @@ struct SystemMonitorView: View {
                 progress: service.metrics.memoryPressure
             )
 
+            Divider().overlay(Color.white.opacity(0.06))
+
+            metricRow(
+                title: "Disk",
+                icon: "internaldrive",
+                tint: diskTint,
+                value: diskText,
+                detail: diskDetail,
+                progress: service.metrics.diskPressure
+            )
+
             if service.metrics.hasBattery {
                 Divider().overlay(Color.white.opacity(0.06))
 
@@ -126,6 +137,25 @@ struct SystemMonitorView: View {
         switch pressure {
         case ..<0.6: return Color.notchAccent
         case ..<0.85: return Color(red: 0.98, green: 0.72, blue: 0.38)
+        default: return Color(red: 0.96, green: 0.38, blue: 0.38)
+        }
+    }
+
+    private var diskText: String {
+        guard let pressure = service.metrics.diskPressure else { return "—" }
+        return SystemMetricFormatting.percent(pressure)
+    }
+
+    private var diskDetail: String? {
+        guard service.metrics.diskUsed > 0, service.metrics.diskTotal > 0 else { return nil }
+        return "\(SystemMetricFormatting.bytes(service.metrics.diskUsed)) / \(SystemMetricFormatting.bytes(service.metrics.diskTotal))"
+    }
+
+    private var diskTint: Color {
+        guard let pressure = service.metrics.diskPressure else { return .notchMuted }
+        switch pressure {
+        case ..<0.8: return Color.notchAccent
+        case ..<0.9: return Color(red: 0.98, green: 0.72, blue: 0.38)
         default: return Color(red: 0.96, green: 0.38, blue: 0.38)
         }
     }

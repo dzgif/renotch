@@ -45,12 +45,15 @@ final class SystemMonitorService: ObservableObject {
     func refresh() {
         let cpu = sampleCPU()
         let memory = sampleMemory()
+        let disk = sampleDisk()
         let battery = sampleBattery()
 
         metrics = SystemMetrics(
             cpuUsage: cpu ?? metrics.cpuUsage,
             memoryUsed: memory.used,
             memoryTotal: memory.total,
+            diskUsed: disk.used,
+            diskTotal: disk.total,
             batteryLevel: battery.level,
             isCharging: battery.isCharging,
             hasBattery: battery.hasBattery
@@ -149,6 +152,24 @@ final class SystemMonitorService: ObservableObject {
         let used = active + wired + compressed
         let total = ProcessInfo.processInfo.physicalMemory
         return (used, total)
+    }
+
+    // MARK: - Disk
+
+    private func sampleDisk() -> (used: UInt64, total: UInt64) {
+        let url = URL(fileURLWithPath: "/")
+        let keys: Set<URLResourceKey> = [
+            .volumeTotalCapacityKey,
+            .volumeAvailableCapacityForImportantUsageKey
+        ]
+        guard let values = try? url.resourceValues(forKeys: keys),
+              let total = values.volumeTotalCapacity,
+              let available = values.volumeAvailableCapacityForImportantUsage else {
+            return (0, 0)
+        }
+        let totalInt64 = Int64(total)
+        let used = UInt64(max(0, totalInt64 - available))
+        return (used, UInt64(totalInt64))
     }
 
     // MARK: - Battery

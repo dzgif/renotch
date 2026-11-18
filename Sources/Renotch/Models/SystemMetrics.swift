@@ -8,6 +8,10 @@ struct SystemMetrics: Equatable, Sendable {
     let memoryUsed: UInt64
     /// Total physical memory in bytes.
     let memoryTotal: UInt64
+    /// Used disk space on the root volume in bytes.
+    let diskUsed: UInt64
+    /// Total disk capacity of the root volume in bytes.
+    let diskTotal: UInt64
     /// Battery level as a fraction 0...1. Nil when no battery (desktop) or unknown.
     let batteryLevel: Double?
     /// True when plugged in and charging.
@@ -19,6 +23,8 @@ struct SystemMetrics: Equatable, Sendable {
         cpuUsage: nil,
         memoryUsed: 0,
         memoryTotal: 0,
+        diskUsed: 0,
+        diskTotal: 0,
         batteryLevel: nil,
         isCharging: false,
         hasBattery: false
@@ -28,6 +34,12 @@ struct SystemMetrics: Equatable, Sendable {
     var memoryPressure: Double? {
         guard memoryTotal > 0 else { return nil }
         return Double(memoryUsed) / Double(memoryTotal)
+    }
+
+    /// Disk usage as a fraction 0...1 of the root volume.
+    var diskPressure: Double? {
+        guard diskTotal > 0 else { return nil }
+        return Double(diskUsed) / Double(diskTotal)
     }
 }
 
