@@ -34,6 +34,10 @@ struct CompactNotchView: View {
                     message: model.transientMessage,
                     showsTrackInfo: model.settings.resolvedCompactMusicShowsTrackInfo
                 )
+            case .remote:
+                if let nowPlaying = model.mediaRemote.nowPlaying {
+                    CompactNowPlayingView(nowPlaying: nowPlaying)
+                }
             case .configured:
                 configuredContent
             }
@@ -100,6 +104,8 @@ struct CompactNotchView: View {
             return "browser-media-\(browser.media?.sessionID ?? "unknown")"
         case .music:
             return "music-\(music.track?.id ?? "unknown")"
+        case .remote:
+            return "remote-\(model.mediaRemote.nowPlaying?.title ?? "unknown")"
         case .configured:
             return "configured-\(model.settings.resolvedCompactContent.rawValue)-\(timer.isActive ? "active" : "idle")"
         }

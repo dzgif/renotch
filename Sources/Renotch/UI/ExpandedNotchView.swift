@@ -62,6 +62,9 @@ struct ExpandedNotchView: View {
             if model.activeMediaSource == .browser,
                let media = model.browser.media {
                 ExpandedBrowserMediaView(media: media, artwork: model.browser.mediaArtwork)
+            } else if model.activeMediaSource == .remote,
+                      let nowPlaying = model.mediaRemote.nowPlaying {
+                NowPlayingView(nowPlaying: nowPlaying)
             } else {
                 MusicPlayerView(music: model.music, lyrics: model.lyrics)
             }

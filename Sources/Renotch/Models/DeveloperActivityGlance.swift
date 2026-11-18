@@ -28,6 +28,7 @@ enum AdaptiveCompactPresentation: Equatable, Sendable {
     case codingGlance
     case browserMedia
     case music
+    case remote
     case configured
 }
 
@@ -49,6 +50,7 @@ enum AdaptiveCompactArbitrator {
         switch mediaSource {
         case .browser: return .browserMedia
         case .music: return .music
+        case .remote: return .remote
         case nil: return .configured
         }
     }

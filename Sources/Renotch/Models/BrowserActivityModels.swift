@@ -56,6 +56,7 @@ enum BrowserActivityPresentation: Hashable, Sendable {
 enum AdaptiveMediaSource: String, Equatable, Sendable {
     case browser
     case music
+    case remote
 }
 
 enum AdaptiveMediaArbitrator {
@@ -64,13 +65,20 @@ enum AdaptiveMediaArbitrator {
         browserIsPlaying: Bool,
         browserActivation: Date,
         musicIsPlaying: Bool,
-        musicActivation: Date
+        musicActivation: Date,
+        remoteIsPlaying: Bool = false,
+        remoteActivation: Date = .distantPast
     ) -> AdaptiveMediaSource? {
-        if browserIsPlaying, musicIsPlaying {
-            return musicActivation >= browserActivation ? .music : .browser
+        var winner: (source: AdaptiveMediaSource, activation: Date)?
+        func consider(_ source: AdaptiveMediaSource, _ isPlaying: Bool, _ activation: Date) {
+            guard isPlaying else { return }
+            if winner == nil || activation >= winner!.activation {
+                winner = (source, activation)
+            }
         }
-        if musicIsPlaying { return .music }
-        if browserIsPlaying { return .browser }
-        return nil
+        consider(.browser, browserIsPlaying, browserActivation)
+        consider(.music, musicIsPlaying, musicActivation)
+        consider(.remote, remoteIsPlaying, remoteActivation)
+        return winner?.source
     }
 }

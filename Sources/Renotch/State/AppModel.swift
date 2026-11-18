@@ -46,6 +46,7 @@ final class AppModel: ObservableObject {
     let todos: TodoStore
     let activity: DeveloperActivityService
     let system: SystemMonitorService
+    let mediaRemote: MediaRemoteService
     let focusBlocker: FocusBlockerService
 
     var onPanelConfigurationChanged: (() -> Void)?
@@ -63,6 +64,7 @@ final class AppModel: ObservableObject {
     private var timerActivityCancellable: AnyCancellable?
     private var activityGlanceCancellable: AnyCancellable?
     private var focusBlockerCancellable: AnyCancellable?
+    private var mediaRemoteCancellable: AnyCancellable?
     private var modeBeforeFileDrop: NotchMode = .compact
     private var modeBeforeFocusTakeover: NotchMode = .compact
     private var isApplyingLoginSetting = false
@@ -81,6 +83,7 @@ final class AppModel: ObservableObject {
         todos = TodoStore(defaults: defaults)
         activity = DeveloperActivityService()
         system = SystemMonitorService()
+        mediaRemote = MediaRemoteService()
         focusBlocker = FocusBlockerService()
         FocusBlockerOverlayController.shared.blockerService = focusBlocker
 
@@ -118,6 +121,9 @@ final class AppModel: ObservableObject {
         focusBlockerCancellable = focusBlocker.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
+        mediaRemoteCancellable = mediaRemote.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
         activityGlanceCancellable = activity.$glance
             .dropFirst()
             .sink { [weak self] _ in
@@ -150,7 +156,9 @@ final class AppModel: ObservableObject {
             browserIsPlaying: browser.media?.isPlaying == true,
             browserActivation: browser.playbackActivationDate,
             musicIsPlaying: music.isPlaying,
-            musicActivation: music.playbackActivationDate
+            musicActivation: music.playbackActivationDate,
+            remoteIsPlaying: mediaRemote.nowPlaying != nil,
+            remoteActivation: mediaRemote.playbackActivationDate
         )
     }
 
@@ -543,11 +551,13 @@ final class AppModel: ObservableObject {
         music.pause()
         activity.pause()
         system.pause()
+        mediaRemote.pause()
     }
 
     private func resumeServices() {
         music.resume()
         activity.resume()
         system.resume()
+        mediaRemote.resume()
     }
 }

@@ -20,6 +20,7 @@ swiftc \
     Sources/Renotch/Services/MusicService.swift \
     Sources/Renotch/Services/LyricsService.swift \
     Sources/Renotch/Services/SystemMonitorService.swift \
+    Sources/Renotch/Services/MediaRemoteService.swift \
     Sources/Renotch/Services/BrowserActivityService.swift \
     Sources/Renotch/Services/DeveloperActivityService.swift \
     Sources/Renotch/Services/AppleCalendarService.swift \
