@@ -16,6 +16,18 @@ Turn your Mac's notch into a lightweight, native developer command center.
 
 ---
 
+## ✨ Fork Additions (v1.9.0)
+
+This fork builds on [yosaiy/renotch](https://github.com/yosaiy/renotch) (`v1.8.0`) with:
+
+- **Synced Lyrics** — time-synced lyrics for Apple Music & Spotify via [LRCLIB](https://lrclib.net): a live karaoke line in the compact notch and a full tap-to-seek panel.
+- **System Monitor** — live CPU, memory, and battery as a new notch section (compact + expanded views).
+- **Servers grid fix** — three server cards no longer clip at the panel edges at the default width; the grid now adapts to panel size.
+- **Performance** — cached working-directory lookups and adaptive polling back-off cut idle CPU/battery drain.
+- **Unified motion** — all spring animations consolidated onto shared tokens for a consistent feel.
+
+---
+
 ## Features
 
 - **Dev Activity**: Track local servers, ports, Git status, Docker containers, and build jobs.
