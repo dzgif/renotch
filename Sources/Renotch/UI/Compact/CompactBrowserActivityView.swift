@@ -91,7 +91,7 @@ struct CompactBrowserMediaView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("YouTube, \(media.title), \(media.isPlaying ? "playing" : "paused")")
+        .accessibilityLabel("\(media.sourceName), \(media.title), \(media.isPlaying ? "playing" : "paused")")
     }
 }
 
@@ -152,7 +152,7 @@ struct ExpandedBrowserMediaView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 5) {
                         Image(systemName: "play.rectangle.fill")
-                        Text("YOUTUBE")
+                        Text(media.sourceName.uppercased())
                             .tracking(0.8)
                         Circle()
                             .fill(media.isPlaying ? Color.red : Color.white.opacity(0.35))

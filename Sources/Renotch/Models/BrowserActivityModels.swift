@@ -13,6 +13,18 @@ struct BrowserMediaActivity: Equatable, Identifiable, Sendable {
 
     var id: String { sessionID }
 
+    /// Friendly platform name derived from the page host (YouTube, SoundCloud, ...).
+    var sourceName: String {
+        guard let host = pageURL?.host?.lowercased() else { return "Media" }
+        let cleaned = host.replacingOccurrences(of: "www.", with: "")
+        if cleaned.contains("youtube") || cleaned == "youtu.be" { return "YouTube" }
+        if cleaned.contains("soundcloud") { return "SoundCloud" }
+        if cleaned.contains("spotify") { return "Spotify" }
+        if cleaned.contains("netflix") { return "Netflix" }
+        if cleaned.contains("vimeo") { return "Vimeo" }
+        return cleaned.split(separator: ".").first.map { $0.capitalized } ?? "Media"
+    }
+
     var progress: Double? {
         guard duration > 0 else { return nil }
         return (position / duration).clamped(to: 0...1)
