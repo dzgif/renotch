@@ -528,6 +528,17 @@ struct SmokeTests {
         expect(LyricsService.index(of: lyricLines, at: 12) == 1, "lyric index between lines")
         expect(LyricsService.index(of: lyricLines, at: 100) == 2, "lyric index after last line")
 
+        let syncLines = [LyricLine(time: 10, text: "a"), LyricLine(time: 100, text: "b")]
+        let matchedDuration = LyricsService.scaled(syncLines, actualDuration: 200, sourceDuration: 200)
+        expect(matchedDuration.map(\.time) == [10.0, 100.0], "lyric matching duration leaves times unchanged")
+
+        let smallDrift = LyricsService.scaled(syncLines, actualDuration: 202, sourceDuration: 200)
+        expect(smallDrift.map(\.time) == [10.0, 100.0], "lyric under-threshold drift leaves times unchanged")
+
+        let stretched = LyricsService.scaled(syncLines, actualDuration: 220, sourceDuration: 200)
+        expect(abs((stretched[0].time) - 11.0) < 0.001, "lyric longer track stretches timestamps")
+        expect(abs((stretched[1].time) - 110.0) < 0.001, "lyric longer track stretches last timestamp")
+
         let legacyTodoJSON: [String: Any] = [
             "id": UUID().uuidString,
             "title": "Legacy task",

@@ -51,8 +51,12 @@ final class LyricsService: ObservableObject {
             let result = await Self.fetch(track: track)
             guard !Task.isCancelled, let self, currentRequest == self.requestID else { return }
             switch result {
-            case let .synced(lrc):
-                let parsed = Self.parseLRC(lrc)
+            case let .synced(lrc, sourceDuration):
+                let parsed = Self.scaled(
+                    Self.parseLRC(lrc),
+                    actualDuration: track.duration,
+                    sourceDuration: sourceDuration
+                )
                 Self.store(parsed, for: key)
                 self.apply(synced: parsed, plain: [], state: .loaded, request: currentRequest)
             case let .plain(text):
@@ -99,6 +103,20 @@ final class LyricsService: ObservableObject {
         return lines[index].text
     }
 
+    /// Stretches/compresses timestamps when the played track's duration differs
+    /// from the version the lyrics were synced against (album cut vs radio edit).
+    /// Mismatches under 2% are left alone so small metadata noise isn't amplified.
+    nonisolated static func scaled(
+        _ lines: [LyricLine],
+        actualDuration: TimeInterval,
+        sourceDuration: TimeInterval
+    ) -> [LyricLine] {
+        guard actualDuration > 0, sourceDuration > 0 else { return lines }
+        let ratio = actualDuration / sourceDuration
+        guard abs(ratio - 1) > 0.02 else { return lines }
+        return lines.map { LyricLine(time: $0.time * ratio, text: $0.text) }
+    }
+
     // MARK: - Apply
 
     private func apply(
@@ -116,7 +134,7 @@ final class LyricsService: ObservableObject {
     // MARK: - Fetching
 
     private enum LyricsFetchResult: Sendable {
-        case synced(String)
+        case synced(String, sourceDuration: TimeInterval)
         case plain(String)
         case none
     }
@@ -149,7 +167,7 @@ final class LyricsService: ObservableObject {
                 return nil
             }
             if let synced = json["syncedLyrics"] as? String, !synced.isEmpty {
-                return .synced(synced)
+                return .synced(synced, sourceDuration: TimeInterval((json["duration"] as? Int) ?? 0))
             }
             if let plain = json["plainLyrics"] as? String, !plain.isEmpty {
                 return .plain(plain)
@@ -185,8 +203,9 @@ final class LyricsService: ObservableObject {
                 return duration > 0 && abs(resultDuration - duration) <= tolerance
             }
             for result in [durationMatched, results.first].compactMap({ $0 }) {
+                let sourceDuration = TimeInterval((result["duration"] as? Int) ?? 0)
                 if let synced = result["syncedLyrics"] as? String, !synced.isEmpty {
-                    return .synced(synced)
+                    return .synced(synced, sourceDuration: sourceDuration)
                 }
                 if let plain = result["plainLyrics"] as? String, !plain.isEmpty {
                     return .plain(plain)
